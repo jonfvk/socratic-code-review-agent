@@ -1,6 +1,7 @@
 const vscode = require("vscode");
 const cp = require("child_process");
 const path = require("path");
+const fs = require("fs");
 
 let panel;
 let session;
@@ -48,7 +49,7 @@ async function healthy() {
 async function ensureBackend(context) {
   if (await healthy()) return true;
   if (!cfg().get("autoStartBackend")) return false;
-  const repoRoot = path.resolve(context.extensionPath, "..");
+  const repoRoot = path.resolve(fs.realpathSync(context.extensionPath), "..");
   const env = { ...process.env };
   const envFile = cfg().get("envFile");
   if (envFile) env.SOCRATIC_ENV_FILE = envFile;
