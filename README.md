@@ -28,7 +28,7 @@ the workspace root) rather than guessing.
 uv sync
 cp .env.example .env      # add OPENAI_API_KEY (optional: TAVILY_API_KEY, SOCRATIC_MODEL)
 uv run pytest             # tests
-uv run uvicorn socratic_tutor.server:app --app-dir backend --port 8765   # optional: the extension auto-starts it
+.venv/bin/python -m uvicorn socratic_tutor.server:app --app-dir backend --port 8765   # optional: the extension auto-starts it
 ```
 
 Install the extension: open the `extension/` folder in VS Code and press `F5` (Extension Development Host),

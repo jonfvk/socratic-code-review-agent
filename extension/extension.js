@@ -56,8 +56,13 @@ async function ensureBackend(context) {
   backendProc = cp.spawn(cfg().get("backendCommand"), { cwd: repoRoot, env, shell: true });
   backendProc.stdout.on("data", (d) => output.append(d.toString()));
   backendProc.stderr.on("data", (d) => output.append(d.toString()));
-  backendProc.on("exit", () => (backendProc = undefined));
-  for (let i = 0; i < 40; i++) {
+  let exited = false;
+  backendProc.on("exit", (code) => {
+    exited = true;
+    backendProc = undefined;
+    output.appendLine(`Backend exited with code ${code}`);
+  });
+  for (let i = 0; i < 40 && !exited; i++) {
     if (await healthy()) return true;
     await new Promise((r) => setTimeout(r, 500));
   }
@@ -152,7 +157,7 @@ window.addEventListener("message",({data})=>{
   const th=document.getElementById("thinking");if(th)th.remove();
   if(data.type==="html"){add("tutor",data.html);}
   if(data.type==="ready"){input.style.display="block";answer.focus();}
-  if(data.type==="error"){add("tutor","⚠️ "+data.html);input.style.display="block";}
+  if(data.type==="error"){add("tutor","⚠️ "+data.html);input.style.display=data.canRetry?"block":"none";}
   if(data.type==="reset"){log.innerHTML="";}
   if(data.type==="info"){add("tutor",data.html);}
 });
@@ -191,6 +196,9 @@ function ensurePanel(context) {
   panel.webview.onDidReceiveMessage(async (msg) => {
     if (msg.type === "loaded") return panel.resolveLoaded();
     if (msg.type === "reveal" && session?.related[msg.index]) return reveal(session.related[msg.index]);
+    if (msg.type === "answer" && !session) {
+      panel.webview.postMessage({ type: "error", html: "No active session. Highlight code and run Socratic Tutor again." });
+    }
     if (msg.type === "answer" && session) {
       try {
         const reply = await api("/session/answer", { session_id: session.id, answer: msg.text });
@@ -199,7 +207,7 @@ function ensurePanel(context) {
         panel.webview.postMessage({ type: "html", html: renderReply(reply) });
         panel.webview.postMessage({ type: "ready" });
       } catch (e) {
-        panel.webview.postMessage({ type: "error", html: esc(e.message) });
+        panel.webview.postMessage({ type: "error", html: esc(e.message), canRetry: true });
       }
     }
   });
@@ -225,7 +233,10 @@ async function ask(context) {
   clearHighlights();
   highlightSelection(editor, selection);
   try {
-    if (!(await ensureBackend(context))) throw new Error("Backend is not reachable. Run 'Socratic Tutor: Start backend' or see the output panel.");
+    if (!(await ensureBackend(context))) {
+      output.show(true);
+      throw new Error("Backend is not reachable. See View > Output > 'Socratic Tutor' for the reason.");
+    }
     const q = await api("/session/start", {
       file_path: editor.document.uri.fsPath,
       file_content: editor.document.getText(),
