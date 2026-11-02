@@ -1,0 +1,35 @@
+{
+  "name": "socratic-code-review-agent",
+  "displayName": "Socratic Code Review Agent",
+  "description": "A Socratic tutor that helps you understand the code you highlight.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Education", "Other"],
+  "activationEvents": ["onLanguage:python"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "socraticTutor.ask", "title": "Socratic Tutor: Ask me about the highlighted code", "icon": "$(mortar-board)" },
+      { "command": "socraticTutor.clearHighlights", "title": "Socratic Tutor: Clear highlights" },
+      { "command": "socraticTutor.startBackend", "title": "Socratic Tutor: Start backend" }
+    ],
+    "keybindings": [
+      { "command": "socraticTutor.ask", "key": "ctrl+alt+s", "mac": "cmd+alt+s", "when": "editorTextFocus && editorLangId == python" }
+    ],
+    "menus": {
+      "editor/context": [
+        { "command": "socraticTutor.ask", "when": "editorHasSelection && editorLangId == python", "group": "navigation@99" }
+      ]
+    },
+    "configuration": {
+      "title": "Socratic Tutor",
+      "properties": {
+        "socraticTutor.backendUrl": { "type": "string", "default": "http://127.0.0.1:8765", "description": "URL of the Python tutor backend." },
+        "socraticTutor.autoStartBackend": { "type": "boolean", "default": true, "description": "Start the backend automatically when it is not running." },
+        "socraticTutor.backendCommand": { "type": "string", "default": "uv run uvicorn socratic_tutor.server:app --app-dir backend --host 127.0.0.1 --port 8765", "description": "Command used to start the backend (run from the repository root)." },
+        "socraticTutor.envFile": { "type": "string", "default": "", "description": "Optional path to a .env file with OPENAI_API_KEY (passed to the backend as SOCRATIC_ENV_FILE)." }
+      }
+    }
+  }
+}
